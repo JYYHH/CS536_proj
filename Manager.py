@@ -39,11 +39,8 @@ class Globel_Manager:
             frame_size, Type = tuple(map(int, meta_file.readline().split(' ')))
             if Type == 1:
                 I_frame_Q.append(frame_size)
-            elif Type == 2 or Type == 3: # dependent frame
+            else: # All other types are seemed as P frame
                 P_frame_Q.append(frame_size)
-            else:
-                print(f"Unknown frame type {Type}")
-                assert 1 == 0
             label = int(label_file.readline())
             if i > 0:
                 mius.append(tmp_temporal.get_miu(1))
@@ -99,11 +96,8 @@ class Globel_Manager:
             frame_size, Type = tuple(map(int, meta_file.readline().split(' ')))
             if Type == 1:
                 I_frame_Q.append(frame_size)
-            elif Type == 2 or Type == 3: # dependent frame
+            else: # All other types are seemed as P frame
                 P_frame_Q.append(frame_size)
-            else:
-                print("Unknown frame type")
-                assert 1 == 0
             label = int(label_file.readline())
             if i > 0:
                 mius.append(tmp_temporal.get_miu(1))
