@@ -1,4 +1,5 @@
 from Model import *
+import matplotlib.pyplot as plt
 
 class Globel_Manager:
     """
@@ -13,13 +14,13 @@ class Globel_Manager:
         self.model_save_path = model_save_path
         self.window_te = win_s_T
         self.window_cp = win_s_C
-        self.lamb = Lmabda
+        self.lamb = Lambda
         self.contextual_predictor = Contextual_Predictor(win_s_C)
 
     def get_window(self, List):
         if len(List) >= self.window_cp:
             return List[-self.window_cp:]
-        else if len(List) >= 1:
+        elif len(List) >= 1:
             return [List[0]] * (self.window_cp - len(List)) + List
         else:
             return [15000] * self.window_cp # default pkg sizes
@@ -38,10 +39,10 @@ class Globel_Manager:
             frame_size, Type = tuple(map(int, meta_file.readline().split(' ')))
             if Type == 1:
                 I_frame_Q.append(frame_size)
-            elif Type == 2:
+            elif Type == 2 or Type == 3: # dependent frame
                 P_frame_Q.append(frame_size)
             else:
-                print("Unknown frame type")
+                print(f"Unknown frame type {Type}")
                 assert 1 == 0
             label = int(label_file.readline())
             if i > 0:
@@ -56,15 +57,25 @@ class Globel_Manager:
         return  (I_meta, P_meta, mius, labels)
 
     def train_model(self, meta_path, label_path, epochs = 10, batch_size = 32, first_time = False):
-        self.contextual_predictor.train_(
-                                    *self.prepare_train_data(
-                                        meta_path, 
-                                        label_path,
-                                        first_time
-                                    ), 
-                                    epochs, 
-                                    batch_size
-                                )
+        history = self.contextual_predictor.train_(
+                                                *self.prepare_train_data(
+                                                    meta_path, 
+                                                    label_path,
+                                                    first_time
+                                                ), 
+                                                epochs, 
+                                                batch_size
+                                            )
+        # whether print the loss function of training
+        train_loss = history.history['loss']
+        epochs = range(1, len(train_loss) + 1)
+        plt.plot(epochs, train_loss, 'bo-', label='Training loss')
+        plt.title('Training Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.show()
+
         self.contextual_predictor.save_to(self.model_save_path)
 
     def evaluate__(self, predicts, labels, ratio):
@@ -88,7 +99,7 @@ class Globel_Manager:
             frame_size, Type = tuple(map(int, meta_file.readline().split(' ')))
             if Type == 1:
                 I_frame_Q.append(frame_size)
-            elif Type == 2:
+            elif Type == 2 or Type == 3: # dependent frame
                 P_frame_Q.append(frame_size)
             else:
                 print("Unknown frame type")

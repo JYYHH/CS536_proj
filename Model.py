@@ -17,7 +17,7 @@ def build_ensemble_threeview(inp_len1=5, inp_len2=5, inp_len3=1, conv_units=[32,
     """
     inp1 = layers.Input(shape=(None, inp_len1), name="View1-Indepdendent")
     inp2 = layers.Input(shape=(None, inp_len2), name="View2-Predicted")
-    inp3 = layers.Input(shape=(None, inp_len3), name="View3-Temporal")
+    inp3 = layers.Input(shape=(inp_len3), name="View3-Temporal")
     x1 = inp1
     x2 = inp2 
     x3 = inp3
@@ -157,7 +157,7 @@ class Contextual_Predictor:
         mius: (T, 1)
         labels (T, 1)
         """
-        self.model.fit(
+        return self.model.fit( # to get the training history
             np.array([
                 np.array(I_meta).reshape(-1, self.window_size),
                 np.array(P_meta).reshape(-1, self.window_size),
