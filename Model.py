@@ -174,7 +174,7 @@ class Contextual_Predictor:
         )
 
     # only for test
-    def infer_group(self, I_meta, P_meta, mius, labels):
+    def infer_group(self, I_meta, P_meta, mius, labels = None):
         out = self.model.predict(
             [
                 np.array(I_meta).reshape(-1, 1, self.window_size),
@@ -182,8 +182,9 @@ class Contextual_Predictor:
                 np.array(mius).reshape(-1, 1)
             ],
         )
-        print(out)
-        print(labels)
+        # print(out)
+        # print(labels)
+        return out
 
     def infer_(self, I_window, P_window, miu):
         """

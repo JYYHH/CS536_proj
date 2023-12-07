@@ -25,9 +25,7 @@ class Globel_Manager:
         else:
             return [15000] * self.window_cp # default pkg sizes
     
-    def prepare_train_data(self, meta_path, label_path, first_time):
-        if not first_time:
-            self.contextual_predictor.load_from(self.model_save_path)
+    def prepare_data(self, meta_path, label_path):
         T = len(open(meta_path).readlines())
         tmp_temporal = Temporal_Estimator(self.window_te, T, self.lamb)
         meta_file = open(meta_path)
@@ -53,50 +51,64 @@ class Globel_Manager:
 
         return  (I_meta, P_meta, mius, labels)
 
-    def train_model(self, meta_path, label_path, epochs = 10, batch_size = 32, first_time = False):
+    def evaluate__(self, predicts, labels, ratio, path_name, Type = 0): # Type = 0 -> filter mode / 1 -> regular mode
+        predicts, labels = predicts.reshape(-1), labels.reshape(-1)
+        if Type == 0:
+            index_ = np.argsort(predicts)
+            predicts = np.ones(predicts.shape[0]).astype(int)
+            predicts[index_[:int(ratio * predicts.shape[0])]] = 0
+
+            # print(predicts, labels)
+
+            # Only predict == 0 && label == 1 -> incorrect
+            incorrect_num = np.sum((predicts ^ 1) & labels)
+            acc = 1 - incorrect_num / predicts.shape[0]
+            print(f"Model running on Test data {path_name}, has the accuracy {acc}\n    On ratio: {ratio}")
+            return predicts.shape[0] - incorrect_num, predicts.shape[0]
+        else:
+            predicts = predicts >= 0.5
+            correct_num = np.sum(predicts == labels)
+            acc = correct_num / predicts.shape[0]
+            print(f"(Normal Mode) Model running on Test data {path_name}, has the accuracy {acc}")
+            return correct_num, predicts.shape[0]
+
+    def train_model(self, meta_path, label_path, epochs = 10, batch_size = 32):
         history = self.contextual_predictor.train_(
-                                                *self.prepare_train_data(
+                                                *self.prepare_data(
                                                     meta_path, 
-                                                    label_path,
-                                                    first_time
+                                                    label_path
                                                 ), 
                                                 epochs, 
                                                 batch_size
                                             )
-        # whether print the loss function of training
-        # train_loss = history.history['loss']
-        # epochs = range(1, len(train_loss) + 1)
-        # plt.plot(epochs, train_loss, 'bo-', label='Training loss')
-        # plt.title('Training Loss')
-        # plt.xlabel('Epochs')
-        # plt.ylabel('Loss')
-        # plt.legend()
-        # plt.show()
-
-        # --------------- play on train set ---------------------
-        # self.contextual_predictor.infer_group(
-        #                                         *self.prepare_train_data(
-        #                                             meta_path, 
-        #                                             label_path,
-        #                                             first_time
-        #                                         )
-        #                                     )
         
+        # self.contextual_predictor.save_to(self.model_save_path)
 
-        self.contextual_predictor.save_to(self.model_save_path)
 
-    def evaluate__(self, predicts, labels, ratio):
-        filter_index = int(ratio * predicts.shape[0])
-        threshold = np.partition(predicts, filter_index)[filter_index]
-        predicts = (predicts >= threshold)
-        # Only predict == 0 && label == 1 -> incorrect
-        acc = 1 - np.sum((predicts ^ 1) & labels)/predicts.shape[0]
-        print(f"Model saved in {self.model_save_path}, has the accuracy {acc}\nOn ratio: {ratio}")
+    def evaluate_(self, meta_path, label_path, ratio, Type = 0):
+        # self.contextual_predictor.load_from(self.model_save_path)
+        I_meta, P_meta, mius, labels = self.prepare_data(
+                                            meta_path, 
+                                            label_path
+                                        )
+        predicts = self.contextual_predictor.infer_group(
+                                                    I_meta, 
+                                                    P_meta, 
+                                                    mius
+                                                )
 
-    def evaluate_(self, meta_path, label_path, ratio):
+        return self.evaluate__(
+                    np.array(predicts), 
+                    np.array(labels), 
+                    ratio,
+                    meta_path,
+                    Type # And you can specify the evaluate type here
+                )
+
+    def evaluate_iter(self, meta_path, label_path, ratio):
         T = len(open(meta_path).readlines())
         tmp_temporal = Temporal_Estimator(self.window_te, T, self.lamb)
-        self.contextual_predictor.load_from(self.model_save_path)
+        # self.contextual_predictor.load_from(self.model_save_path)
         meta_file = open(meta_path)
         label_file = open(label_path)
         I_frame_Q, P_frame_Q = [], []
@@ -126,11 +138,12 @@ class Globel_Manager:
         
         # print(predicts, labels)
 
-        self.evaluate__(
-            np.array(predicts), 
-            np.array(labels), 
-            ratio
-        )
+        return self.evaluate__(
+                    np.array(predicts), 
+                    np.array(labels), 
+                    ratio,
+                    meta_path
+                )
 
 
 
