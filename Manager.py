@@ -1,5 +1,6 @@
 from Model import *
 import matplotlib.pyplot as plt
+import os
 
 class Globel_Manager:
     """
@@ -79,12 +80,37 @@ class Globel_Manager:
             print(f"(Normal Mode) Model running on Test data {path_name}, has the accuracy {acc}")
             return correct_num, predicts.shape[0]
 
+    def prepare_folder_data(self, meta_path, label_path):
+        label_files = [file for file in os.listdir(label_path) if file.endswith('.txt')]
+        meta_files = [file for file in os.listdir(meta_path) if file.endswith('_parse.txt')]
+
+        big_I_meta, big_P_meta, big_mius, big_labels = [], [], [], []
+
+
+        for file in label_files:
+            file = str(file)
+            file1name = os.path.splitext(file)[0]
+            meta_file = file1name + "_parse.txt"
+            
+            label_filepath = os.path.join(label_path, file)
+            meta_filepath = os.path.join(meta_path, meta_file)
+
+            I_meta, P_meta, mius, labels = self.prepare_data(meta_path=meta_filepath, label_path=label_filepath)
+
+            big_I_meta.extend(I_meta)
+            big_P_meta.extend(P_meta)
+            big_mius.extend(mius)
+            big_labels.extend(labels)
+            
+        return (big_I_meta, big_P_meta, big_mius, big_labels)
+
     def train_model(self, meta_path, label_path, epochs = 10, batch_size = 32):
+        if os.path.isdir(meta_path):
+            data = self.prepare_folder_data(meta_path, label_path)
+        else:
+            data = self.prepare_data(meta_path, label_path)
         history = self.contextual_predictor.train_(
-                                                *self.prepare_data(
-                                                    meta_path, 
-                                                    label_path
-                                                ), 
+                                                *data, 
                                                 epochs, 
                                                 batch_size
                                             )
@@ -94,10 +120,13 @@ class Globel_Manager:
 
     def evaluate_(self, meta_path, label_path, ratio, Type = 0):
         # self.contextual_predictor.load_from(self.model_save_path)
-        I_meta, P_meta, mius, labels = self.prepare_data(
-                                            meta_path, 
-                                            label_path
-                                        )
+        I_meta, P_meta, mius, labels = [], [], [], []
+        
+        if os.path.isdir(meta_path):
+            I_meta, P_meta, mius, labels = self.prepare_folder_data(meta_path, label_path)
+        else:
+            I_meta, P_meta, mius, labels = self.prepare_data(meta_path, label_path)
+
         predicts = self.contextual_predictor.infer_group(
                                                     I_meta, 
                                                     P_meta, 
