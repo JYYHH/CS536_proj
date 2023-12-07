@@ -15,14 +15,16 @@ def build_ensemble_threeview(inp_len1=5, inp_len2=5, inp_len3=1, conv_units=[32,
     Return:
         tf.keras.Model instance
     """
-    inp1 = layers.Input(shape=(None, inp_len1), name="View1-Indepdendent")
-    inp2 = layers.Input(shape=(None, inp_len2), name="View2-Predicted")
+    inp1 = layers.Input(shape=(1, inp_len1), name="View1-Indepdendent")
+    inp2 = layers.Input(shape=(1, inp_len2), name="View2-Predicted")
     inp3 = layers.Input(shape=(inp_len3), name="View3-Temporal")
     x1 = inp1
     x2 = inp2 
     x3 = inp3
+    # print(x1.shape, x3.shape)
     for u in conv_units:
         x1 = layers.Conv1D(u, 1, activation="relu")(x1)
+        # print(x1.shape)
         x2 = layers.Conv1D(u, 1, activation="relu")(x2)
     x1 = layers.GlobalMaxPooling1D()(x1)
     x2 = layers.GlobalMaxPooling1D()(x2)
@@ -139,7 +141,7 @@ class Contextual_Predictor:
         # compile the model, hyperparameters are default ones
         self.model.compile(
             optimizer = 'adam',
-            loss = 'categorical_crossentropy',
+            loss = 'binary_crossentropy',
             metrics = ['accuracy']
         )
         self.window_size = win_s
@@ -148,7 +150,7 @@ class Contextual_Predictor:
         self.model.save(path)
 
     def load_from(self, path):
-        self.model = keras.models.load_model(path)
+        self.model = tf.keras.models.load_model(path)
     
     def train_(self, I_meta, P_meta, mius, labels, epochs = 10, batch_size = 32):
         """
@@ -157,16 +159,31 @@ class Contextual_Predictor:
         mius: (T, 1)
         labels (T, 1)
         """
+        # print(np.array(I_meta).shape)
+        # print(np.array(P_meta).shape)
+        # print(np.array(mius).shape)
         return self.model.fit( # to get the training history
-            np.array([
-                np.array(I_meta).reshape(-1, self.window_size),
-                np.array(P_meta).reshape(-1, self.window_size),
+            [
+                np.array(I_meta).reshape(-1, 1, self.window_size),
+                np.array(P_meta).reshape(-1, 1, self.window_size),
                 np.array(mius).reshape(-1, 1)
-            ]), # X
+            ], # X
             np.array(labels).reshape(-1, 1), # Y
             epochs = epochs,
             batch_size = batch_size
         )
+
+    # only for test
+    def infer_group(self, I_meta, P_meta, mius, labels):
+        out = self.model.predict(
+            [
+                np.array(I_meta).reshape(-1, 1, self.window_size),
+                np.array(P_meta).reshape(-1, 1, self.window_size),
+                np.array(mius).reshape(-1, 1)
+            ],
+        )
+        print(out)
+        print(labels)
 
     def infer_(self, I_window, P_window, miu):
         """
@@ -177,11 +194,11 @@ class Contextual_Predictor:
         return: (1)
         """
         return self.model.predict(
-            np.array([
-                np.array(I_window), 
-                np.array(P_window), 
-                np.array(miu)
-            ]), # X, but batch_size = 1
+            [
+                np.array(I_window).reshape(1, 1, -1), 
+                np.array(P_window).reshape(1, 1, -1), 
+                np.array([miu]).reshape(-1, 1)
+            ], # X, but batch_size = 1
         )
 
 

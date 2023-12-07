@@ -64,14 +64,24 @@ class Globel_Manager:
                                                 batch_size
                                             )
         # whether print the loss function of training
-        train_loss = history.history['loss']
-        epochs = range(1, len(train_loss) + 1)
-        plt.plot(epochs, train_loss, 'bo-', label='Training loss')
-        plt.title('Training Loss')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.show()
+        # train_loss = history.history['loss']
+        # epochs = range(1, len(train_loss) + 1)
+        # plt.plot(epochs, train_loss, 'bo-', label='Training loss')
+        # plt.title('Training Loss')
+        # plt.xlabel('Epochs')
+        # plt.ylabel('Loss')
+        # plt.legend()
+        # plt.show()
+
+        # --------------- play on train set ---------------------
+        # self.contextual_predictor.infer_group(
+        #                                         *self.prepare_train_data(
+        #                                             meta_path, 
+        #                                             label_path,
+        #                                             first_time
+        #                                         )
+        #                                     )
+        
 
         self.contextual_predictor.save_to(self.model_save_path)
 
@@ -113,6 +123,8 @@ class Globel_Manager:
             tmp_temporal.update(label, NN_out >= 0.5) # autoregression fasion in inference stage
             predicts.append(NN_out)
             labels.append(label)
+        
+        # print(predicts, labels)
 
         self.evaluate__(
             np.array(predicts), 
