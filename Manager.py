@@ -9,6 +9,13 @@ class Globel_Manager:
         self.T: how many package in total
         self.lamb: the Lambda parameter for Temporal Estimator
         self.window_cp: window size for Contextual Predictor
+
+        self.get_window(): Build sliding windows for model input
+        self.prepare_data(): Build input data for the model from the file
+        self.evaluate__(): Given predicts and labels (maybe also filter_ratio for Type0), return the acc of the model
+        self.train_model(): train model using data from a file pair <origined from a video>
+        self.evaluate_(): evaluate model using data from a file pair, and return the (correct_num, total_num) pair
+        self.evaluate_iter(): similar to self.evaluate_(), but this time model runs on autoregressive fasion
     """
     def __init__(self, model_save_path = "default_model.h5", win_s_T = 5, win_s_C = 5, Lambda = 1):
         self.model_save_path = model_save_path
